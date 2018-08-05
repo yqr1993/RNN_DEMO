@@ -9,7 +9,7 @@ len_x = 0
 w = np.random.random((1, 4))*2 - 1
 wy = np.random.random((1, 2))*2 - 1
 lb = np.array([[0., 0., 0., 0., 0., 1., 1., 1., 1.]])
-lr = 0.0097
+lr = 0.011
 
 
 # 读取汉字对应表
@@ -84,10 +84,78 @@ def operate(num):
         bptt()
 
 
+# 训练权值写入磁盘
+def memory(*para):
+    index = 1
+    for ww in para:
+        file_w = open("w" + str(index) + ".txt", "w")
+        file_w_buffer = ww.tolist()
+        for i in file_w_buffer:
+            for j in i:
+                file_w.write(str(j))
+                file_w.write(" ")
+            file_w.write("\n")
+        file_w.close()
+        index += 1
+
+
+# 从磁盘读取神经网络
+def load_param(file_name):
+    file = open(file_name)
+    lines = file.readlines()
+    nl = len(lines)
+    line = lines[0].split(" ")
+    line.pop()
+    nr = len(line)
+    weight = np.ones((nl, nr))
+    for m, i in zip(lines, range(nl)):
+        weight_line = m.split(" ")
+        weight_line.pop()
+        for n, j in zip(weight_line, range(nr)):
+            weight[i][j] = n
+    file.close()
+    return weight
+
+
+# 验证函数
+def test(some_word):
+    convert_sentence(some_word)
+    # 向前传播
+    w_test = load_param("w1.txt")
+    wy_test = load_param("w2.txt")
+    t = 0
+    a = {0: np.array([[0., 0.]])}
+    ax_array_test = []
+    at_array_test = []
+    y_test = []
+    for _ in range(len_x):
+        ax = np.concatenate((a[t], np.array([sentence[t]])), axis=1).T
+        ax_array_test.append(ax[:, 0])
+        at = relu(np.dot(w_test, ax))
+        at = np.concatenate((at, np.array([[1]])), axis=1)
+        at_array_test.append(at[0])
+        t += 1
+        a[t] = at
+        yt = sigmoid(np.dot(wy_test, at.T))
+        y_test.append([yt[0][0]])
+    y_test = np.array(y_test)
+    name = []
+    index = 0
+    for n in y_test:
+        if n >= 0.5:
+            name.append(some_word[index])
+        index += 1
+    print("".join(name))
+
+
+# 进行模型训练
 def main():
     convert_sentence("她的名字叫绚丽多彩")
-    operate(1000)
+    operate(3000)
+    memory(w, wy)
     print(y)
 
 
-main()
+if __name__ == "__main__":
+    # main()
+    test("我牛小二")
