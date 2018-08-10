@@ -39,26 +39,27 @@ def dsigmoid(value):
 # RELU 函数
 def relu(value):
     tmp = value.copy()
-    tmp[tmp < 0] = 0.1*tmp[tmp < 0]
+    tmp[tmp < 0] = 0.01*tmp[tmp < 0]
     return tmp
 
 
 def drelu(value):
     tmp = value.copy()
-    tmp[tmp > 0] = 1
-    tmp[tmp < 0] = 0.1
+    tmp[tmp > 0] = 1.0
+    tmp[tmp < 0] = 0.01
     return tmp
 
 
 # back propagation through time
 def bptt():
     global sentence, y, wy, w, ax_array, at_array
-    # 向前传播
+    # 向前传播,各个参数
     t = 0
     a = {0: np.array([[0., 0.]])}
     ax_array = []
     at_array = []
     y = []
+    # 计算各个参数，并转化为矩阵
     for _ in range(len_x):
         ax = np.concatenate((a[t], np.array([sentence[t]])), axis=1).T
         ax_array.append(ax[:, 0])
@@ -74,7 +75,9 @@ def bptt():
     y = np.array(y)
     # 反向传播
     wy -= lr*(y.T - lb).dot(at_array)
-    w -= lr*((y.T - lb)*drelu(np.dot(w, ax_array.T))).dot(ax_array)
+    by = np.ones((9, 1), "float64")
+    dat = np.concatenate((drelu(np.dot(ax_array, w.T)), by), axis=1)
+    w -= lr*((y.T - lb)*np.dot(wy, dat.T)).dot(ax_array)
     print(np.mean(np.abs(y.T-lb)))
 
 
@@ -151,12 +154,13 @@ def test(some_word):
 # 进行模型训练
 def main():
     convert_sentence("她的名字叫绚丽多彩")
-    operate(3000)
+    operate(8000)
     memory(w, wy)
     print(y)
 
 
 if __name__ == "__main__":
     # main()
-    # test("我牛小二")
-    test("他叫牛小二")
+    # test("他叫牛小二")
+    test("他牛小二")
+    # test("他的名字叫牛小二")
